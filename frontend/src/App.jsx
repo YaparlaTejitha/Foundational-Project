@@ -4,7 +4,7 @@ import Transactions from "./pages/Transactions";
 
 function Dashboard() {
   return (
-    <div className="main-content">
+    <div className="dashboard-content">
       <h1>Dashboard</h1>
 
       <p className="subtitle">
@@ -46,18 +46,35 @@ function App() {
 
         {/* Sidebar */}
         <aside className="sidebar">
+
           <h2>AEGISAI</h2>
 
           <nav>
             <Link to="/">Dashboard</Link>
             <Link to="/transactions">Transactions</Link>
             <Link to="/alerts">Fraud Alerts</Link>
+            <Link to="/risk-monitoring">Risk Monitoring</Link>
+            <Link to="/investigation">Investigation</Link>
+            <Link to="/fraud-cases">Fraud Cases</Link>
             <Link to="/analytics">Analytics</Link>
+            <Link to="/ai-insights">AI Insights</Link>
           </nav>
+
+          {/* Bottom Sidebar */}
+          <div className="sidebar-bottom">
+            <Link to="/settings">Settings</Link>
+            <Link to="/logout">Logout</Link>
+          </div>
+
         </aside>
 
         {/* Page Content */}
         <main className="main-content">
+
+          {/* Administrator */}
+          <div className="top-bar">
+            <span>Administrator 👤</span>
+          </div>
 
           <Routes>
             <Route path="/" element={<Dashboard />} />
