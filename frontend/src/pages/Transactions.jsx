@@ -19,25 +19,26 @@ function Transactions() {
         <div className="table-row">
           <span>TXN001</span>
           <span>₹5,000</span>
-          <span>Completed</span>
-          <span>Low</span>
+          <span className="status-completed">Completed</span>
+          <span className="risk-low">Low</span>
         </div>
 
         <div className="table-row">
           <span>TXN002</span>
           <span>₹25,000</span>
-          <span>Completed</span>
-          <span>Medium</span>
+          <span className="status-completed">Completed</span>
+          <span className="risk-medium">Medium</span>
         </div>
 
         <div className="table-row">
           <span>TXN003</span>
           <span>₹80,000</span>
-          <span>Flagged</span>
-          <span>High</span>
+          <span className="status-flagged">Flagged</span>
+          <span className="risk-high">High</span>
         </div>
 
       </div>
+
     </div>
   );
 }
