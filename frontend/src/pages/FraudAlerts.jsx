@@ -39,7 +39,9 @@ function FraudAlerts() {
           <span>TXN012</span>
           <span>₹1,20,000</span>
           <span className="risk-high">High</span>
-          <span className="status-investigating">Investigating</span>
+          <span className="status-investigating">
+            Investigating
+          </span>
         </div>
 
       </div>
