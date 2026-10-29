@@ -10,6 +10,7 @@ import "./App.css";
 import Transactions from "./pages/Transactions";
 import FraudAlerts from "./pages/FraudAlerts";
 import RiskMonitoring from "./pages/RiskMonitoring";
+import Investigation from "./pages/Investigation";
 
 function Dashboard() {
   return (
@@ -301,6 +302,11 @@ function App() {
             <Route
               path="/risk-monitoring"
               element={<RiskMonitoring />}
+            />
+
+            <Route
+              path="/investigation"
+              element={<Investigation />}
             />
           </Routes>
 
