@@ -11,6 +11,7 @@ import Transactions from "./pages/Transactions";
 import FraudAlerts from "./pages/FraudAlerts";
 import RiskMonitoring from "./pages/RiskMonitoring";
 import Investigation from "./pages/Investigation";
+import FraudCases from "./pages/FraudCases";
 
 function Dashboard() {
   return (
@@ -307,6 +308,10 @@ function App() {
             <Route
               path="/investigation"
               element={<Investigation />}
+            />
+            <Route
+              path="/fraud-cases"
+              element={<FraudCases />}
             />
           </Routes>
 
