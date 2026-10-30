@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -18,9 +19,54 @@ import Settings from "./pages/Settings";
 
 
 function Dashboard() {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function loadTransactions() {
+      try {
+        const response = await fetch("/api/transactions");
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`);
+        }
+
+        const data = await response.json();
+        if (isCurrent) {
+          setTransactions(data);
+          setError("");
+        }
+      } catch {
+        if (isCurrent) {
+          setError("Could not load dashboard data. Check that the backend is running.");
+        }
+      } finally {
+        if (isCurrent) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadTransactions();
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const highRiskCount = transactions.filter((transaction) => Number(transaction.risk) >= 70).length;
+  const lowRiskCount = transactions.filter((transaction) => Number(transaction.risk) < 40).length;
+  const mediumRiskCount = transactions.filter((transaction) => Number(transaction.risk) >= 40 && Number(transaction.risk) < 70).length;
+  const percentage = (count) => transactions.length ? Math.round((count / transactions.length) * 100) : 0;
+  const lowRiskPercentage = percentage(lowRiskCount);
+  const mediumRiskPercentage = percentage(mediumRiskCount);
+  const highRiskPercentage = percentage(highRiskCount);
+  const displayCount = (count) => (loading || error ? "—" : count.toLocaleString());
+  const recentTransactions = transactions.slice(0, 4);
+
   return (
     <div className="dashboard-page">
-
       <div className="page-header">
         <div>
           <h1>Fraud Detection Dashboard</h1>
@@ -28,53 +74,41 @@ function Dashboard() {
         </div>
       </div>
 
-
-      {/* Summary Cards */}
       <div className="summary-cards">
-
         <div className="summary-card">
           <h3>Total Transactions</h3>
-          <h2>12,480</h2>
-          <p className="green-text">+8.2% this month</p>
+          <h2>{displayCount(transactions.length)}</h2>
+          <p>Transactions in the database</p>
         </div>
 
         <div className="summary-card">
           <h3>Fraud Detected</h3>
-          <h2>186</h2>
-          <p className="green-text">1.49% of transactions</p>
+          <h2>—</h2>
+          <p>Detection rules not configured</p>
         </div>
 
         <div className="summary-card">
           <h3>High Risk</h3>
-          <h2>74</h2>
-          <p className="green-text">Requires attention</p>
+          <h2>{displayCount(highRiskCount)}</h2>
+          <p>Risk score 70 or higher</p>
         </div>
 
         <div className="summary-card">
           <h3>Fraud Prevented</h3>
-          <h2>₹8.4L</h2>
-          <p className="green-text">Estimated amount protected</p>
+          <h2>—</h2>
+          <p>Prevention data not available</p>
         </div>
-
       </div>
 
-
-      {/* Dashboard Lower Section */}
       <div className="dashboard-grid">
-
-
-        {/* Recent Transactions */}
         <div className="dashboard-box">
-
           <div className="box-header">
             <div>
               <h2>Recent Transactions</h2>
               <p>Latest transaction activity</p>
             </div>
-
-            <button>View All</button>
+            <Link to="/transactions"><button>View All</button></Link>
           </div>
-
 
           <div className="transaction-header">
             <span>Transaction ID</span>
@@ -83,105 +117,60 @@ function Dashboard() {
             <span>Risk</span>
           </div>
 
+          {loading && (
+            <div className="transaction-item">
+              <span>Loading transactions...</span><span /><span /><span />
+            </div>
+          )}
 
-          <div className="transaction-item">
-            <span>TXN-10021</span>
-            <span>₹2,450</span>
-            <span className="status-genuine">Genuine</span>
-            <span>Low</span>
-          </div>
+          {!loading && error && (
+            <div className="transaction-item">
+              <span>{error}</span><span /><span /><span />
+            </div>
+          )}
 
-          <div className="transaction-item">
-            <span>TXN-10022</span>
-            <span>₹80,000</span>
-            <span className="status-fraud">Fraud</span>
-            <span>High</span>
-          </div>
-
-          <div className="transaction-item">
-            <span>TXN-10023</span>
-            <span>₹12,500</span>
-            <span className="status-review">Review</span>
-            <span>Medium</span>
-          </div>
-
-          <div className="transaction-item">
-            <span>TXN-10024</span>
-            <span>₹1,200</span>
-            <span className="status-genuine">Genuine</span>
-            <span>Low</span>
-          </div>
-
+          {!loading && !error && recentTransactions.map((transaction) => (
+            <div className="transaction-item" key={transaction.id}>
+              <span>{transaction.id}</span>
+              <span>{transaction.amount}</span>
+              <span>{transaction.status}</span>
+              <span>{Number(transaction.risk) >= 70 ? "High" : Number(transaction.risk) >= 40 ? "Medium" : "Low"}</span>
+            </div>
+          ))}
         </div>
 
-
-        {/* Risk Overview */}
         <div className="dashboard-box">
-
           <div className="box-header">
             <div>
               <h2>Risk Overview</h2>
-              <p>Current transaction risk levels</p>
+              <p>Low &lt;40, medium 40–69, high 70+</p>
             </div>
           </div>
-
 
           <div className="risk-item">
-
-            <div className="risk-title">
-              <span>Low Risk</span>
-              <strong>82%</strong>
-            </div>
-
-            <div className="progress-bar">
-              <div className="progress-low"></div>
-            </div>
-
+            <div className="risk-title"><span>Low Risk</span><strong>{loading || error ? "—" : `${lowRiskPercentage}%`}</strong></div>
+            <div className="progress-bar"><div className="progress-low" style={{ width: `${lowRiskPercentage}%` }} /></div>
           </div>
-
 
           <div className="risk-item">
-
-            <div className="risk-title">
-              <span>Medium Risk</span>
-              <strong>12%</strong>
-            </div>
-
-            <div className="progress-bar">
-              <div className="progress-medium"></div>
-            </div>
-
+            <div className="risk-title"><span>Medium Risk</span><strong>{loading || error ? "—" : `${mediumRiskPercentage}%`}</strong></div>
+            <div className="progress-bar"><div className="progress-medium" style={{ width: `${mediumRiskPercentage}%` }} /></div>
           </div>
-
 
           <div className="risk-item">
-
-            <div className="risk-title">
-              <span>High Risk</span>
-              <strong>6%</strong>
-            </div>
-
-            <div className="progress-bar">
-              <div className="progress-high"></div>
-            </div>
-
+            <div className="risk-title"><span>High Risk</span><strong>{loading || error ? "—" : `${highRiskPercentage}%`}</strong></div>
+            <div className="progress-bar"><div className="progress-high" style={{ width: `${highRiskPercentage}%` }} /></div>
           </div>
-
 
           <div className="suspicious-box">
-            <h3>⚠ Suspicious Activity</h3>
-            <p>7 high-risk transactions require investigation.</p>
+            <h3>⚠ High Risk Transactions</h3>
+            <p>{loading || error ? "Risk summary unavailable." : `${highRiskCount} transaction(s) have a risk score of 70 or higher.`}</p>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
-
-
 
 function App() {
   return (

@@ -1,181 +1,147 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const WORKFLOW_STATUSES = ["Pending", "Investigating", "Reviewing", "Completed"];
 
 function Investigation() {
-  const [investigations, setInvestigations] = useState([
-    {
-      id: "INV001",
-      transactionId: "TXN003",
-      amount: "₹80,000",
-      riskScore: 92,
-      reason: "Unusually large transaction",
-      assignedTo: "Investigation Team",
-      status: "Under Investigation",
-    },
-    {
-      id: "INV002",
-      transactionId: "TXN005",
-      amount: "₹65,000",
-      riskScore: 87,
-      reason: "Suspicious transaction pattern",
-      assignedTo: "Investigation Team",
-      status: "Pending",
-    },
-    {
-      id: "INV003",
-      transactionId: "TXN012",
-      amount: "₹1,20,000",
-      riskScore: 96,
-      reason: "Unusual transaction amount",
-      assignedTo: "Risk Team",
-      status: "Escalated",
-    },
-    {
-      id: "INV004",
-      transactionId: "TXN018",
-      amount: "₹95,000",
-      riskScore: 89,
-      reason: "Multiple suspicious activities",
-      assignedTo: "Risk Team",
-      status: "Resolved",
-    },
-  ]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [statusError, setStatusError] = useState("");
+  const [updatingIds, setUpdatingIds] = useState(() => new Set());
 
-  const updateStatus = (id, newStatus) => {
-    setInvestigations((previousInvestigations) =>
-      previousInvestigations.map((investigation) =>
-        investigation.id === id
-          ? { ...investigation, status: newStatus }
-          : investigation
-      )
-    );
-  };
+  useEffect(() => {
+    let isCurrent = true;
 
-  const pendingCount = investigations.filter(
-    (item) => item.status === "Pending"
-  ).length;
+    async function loadReviewItems() {
+      try {
+        const response = await fetch("/api/alerts");
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`);
+        }
+        const data = await response.json();
+        if (isCurrent) {
+          setItems(data);
+        }
+      } catch {
+        if (isCurrent) {
+          setError("Could not load the review queue. Check that the backend is running.");
+        }
+      } finally {
+        if (isCurrent) {
+          setLoading(false);
+        }
+      }
+    }
 
-  const investigatingCount = investigations.filter(
-    (item) => item.status === "Under Investigation"
-  ).length;
+    loadReviewItems();
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
-  const escalatedCount = investigations.filter(
-    (item) => item.status === "Escalated"
-  ).length;
+  async function updateStatus(transactionId, status) {
+    setStatusError("");
+    setUpdatingIds((current) => new Set(current).add(transactionId));
+    try {
+      const response = await fetch(`/api/transactions/${encodeURIComponent(transactionId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const updated = await response.json();
+      if (!response.ok) {
+        throw new Error(updated.error || "Could not update the transaction status.");
+      }
+      setItems((current) => current.map((item) => item.id === transactionId ? updated : item));
+    } catch (updateError) {
+      setStatusError(updateError.message || "Could not update the transaction status.");
+    } finally {
+      setUpdatingIds((current) => {
+        const next = new Set(current);
+        next.delete(transactionId);
+        return next;
+      });
+    }
+  }
 
-  const resolvedCount = investigations.filter(
-    (item) => item.status === "Resolved"
-  ).length;
+  const countByStatus = (status) => items.filter((item) => item.status === status).length;
+  const displayCount = (count) => (loading || error ? "—" : count.toLocaleString());
 
   return (
     <div className="dashboard-page investigation-page">
       <div className="page-header">
         <div>
           <h1>Investigation</h1>
-          <p>
-            Review suspicious transactions and manage fraud investigations.
-          </p>
+          <p>Review transactions scoring 70 or higher. A high score is a review flag, not proof of fraud.</p>
         </div>
       </div>
 
-      {/* Investigation Summary */}
       <div className="summary-cards investigation-summary">
         <div className="summary-card">
-          <p>Total Investigations</p>
-          <h2>{investigations.length}</h2>
-          <span>All investigation records</span>
+          <p>High-Risk Items</p>
+          <h2>{displayCount(items.length)}</h2>
+          <span>In the review queue</span>
         </div>
-
         <div className="summary-card">
           <p>Pending</p>
-          <h2>{pendingCount}</h2>
+          <h2>{displayCount(countByStatus("Pending"))}</h2>
           <span>Awaiting review</span>
         </div>
-
         <div className="summary-card">
-          <p>Under Investigation</p>
-          <h2>{investigatingCount}</h2>
+          <p>Investigating</p>
+          <h2>{displayCount(countByStatus("Investigating"))}</h2>
           <span>Currently being reviewed</span>
         </div>
-
         <div className="summary-card">
-          <p>Escalated</p>
-          <h2>{escalatedCount}</h2>
-          <span>Requires further attention</span>
+          <p>Reviewing</p>
+          <h2>{displayCount(countByStatus("Reviewing"))}</h2>
+          <span>Further checks in progress</span>
         </div>
       </div>
 
-      {/* Investigation Records */}
       <div className="dashboard-box investigation-box">
         <div className="box-header">
           <div>
-            <h2>Investigation Records</h2>
-            <p>Review transaction details and update investigation status.</p>
+            <h2>High-Risk Review Queue</h2>
+            <p>Workflow status changes are saved to the transaction database.</p>
           </div>
-          <span className="investigation-count">
-            {investigations.length} Records
-          </span>
+          <span className="investigation-count">{displayCount(items.length)} Items</span>
         </div>
+
+        {statusError && <p className="transaction-status-error" role="alert">{statusError}</p>}
 
         <div className="investigation-table-wrapper">
           <table className="investigation-table">
             <thead>
               <tr>
-                <th>Investigation ID</th>
                 <th>Transaction ID</th>
+                <th>Customer ID</th>
                 <th>Amount</th>
                 <th>Risk Score</th>
-                <th>Reason</th>
-                <th>Assigned Team</th>
-                <th>Status</th>
-                <th>Action</th>
+                <th>Method</th>
+                <th>Workflow Status</th>
               </tr>
             </thead>
-
             <tbody>
-              {investigations.map((investigation) => (
-                <tr key={investigation.id}>
-                  <td className="investigation-id">{investigation.id}</td>
-                  <td>{investigation.transactionId}</td>
-                  <td className="investigation-amount">
-                    {investigation.amount}
-                  </td>
-                  <td>
-                    <span
-                      className={`investigation-risk ${
-                        investigation.riskScore >= 90
-                          ? "risk-critical"
-                          : "risk-high"
-                      }`}
-                    >
-                      {investigation.riskScore}/100
-                    </span>
-                  </td>
-                  <td>{investigation.reason}</td>
-                  <td>{investigation.assignedTo}</td>
-                  <td>
-                    <span
-                      className={`investigation-status status-${investigation.status
-                        .toLowerCase()
-                        .replaceAll(" ", "-")}`}
-                    >
-                      {investigation.status}
-                    </span>
-                  </td>
+              {loading && <tr><td colSpan="6">Loading review queue...</td></tr>}
+              {!loading && error && <tr><td colSpan="6">{error}</td></tr>}
+              {!loading && !error && items.length === 0 && <tr><td colSpan="6">No transactions meet the review threshold.</td></tr>}
+              {!loading && !error && items.map((item) => (
+                <tr key={item.id}>
+                  <td className="investigation-id">{item.id}</td>
+                  <td>{item.customer}</td>
+                  <td className="investigation-amount">{item.amount}</td>
+                  <td><span className="investigation-risk risk-high">{item.risk}/100</span></td>
+                  <td>{item.method}</td>
                   <td>
                     <select
                       className="investigation-action"
-                      value={investigation.status}
-                      onChange={(event) =>
-                        updateStatus(investigation.id, event.target.value)
-                      }
-                      aria-label={`Update status for ${investigation.id}`}
+                      value={item.status}
+                      disabled={updatingIds.has(item.id)}
+                      onChange={(event) => updateStatus(item.id, event.target.value)}
+                      aria-label={`Update workflow status for ${item.id}`}
                     >
-                      <option value="Pending">Pending</option>
-                      <option value="Under Investigation">
-                        Under Investigation
-                      </option>
-                      <option value="Escalated">Escalated</option>
-                      <option value="Resolved">Resolved</option>
+                      {WORKFLOW_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
                     </select>
                   </td>
                 </tr>
@@ -185,58 +151,29 @@ function Investigation() {
         </div>
       </div>
 
-      {/* Investigation Guidelines */}
       <div className="dashboard-box investigation-guidelines">
         <div className="box-header">
           <div>
-            <h2>Investigation Guidelines</h2>
-            <p>Recommended steps when reviewing suspicious transactions.</p>
+            <h2>Review Guidance</h2>
+            <p>These are manual review steps; the app does not determine fraud.</p>
           </div>
         </div>
-
         <div className="investigation-guidelines-grid">
           <div className="guideline-card">
             <div className="guideline-number">01</div>
-            <h3>Review Transaction</h3>
-            <p>
-              Check the transaction amount, risk score, and reason for the
-              alert.
-            </p>
+            <h3>Review the Record</h3>
+            <p>Check the transaction amount, payment method, risk score, and current status.</p>
           </div>
-
           <div className="guideline-card">
             <div className="guideline-number">02</div>
-            <h3>Investigate Activity</h3>
-            <p>
-              Examine available transaction history and identify unusual
-              patterns.
-            </p>
+            <h3>Check Available Context</h3>
+            <p>Use the customer and transaction information available in the project.</p>
           </div>
-
           <div className="guideline-card">
             <div className="guideline-number">03</div>
-            <h3>Update Status</h3>
-            <p>
-              Mark the case as under investigation, escalated, or resolved
-              after review.
-            </p>
+            <h3>Update Workflow Status</h3>
+            <p>Record whether the item is pending, being investigated, reviewed, or completed.</p>
           </div>
-        </div>
-      </div>
-
-      {/* Investigation Overview */}
-      <div className="dashboard-box investigation-overview">
-        <div>
-          <h2>Investigation Overview</h2>
-          <p>
-            Keep track of suspicious activity and make sure high-risk cases
-            receive appropriate attention.
-          </p>
-        </div>
-
-        <div className="overview-stat">
-          <span>Resolved Investigations</span>
-          <strong>{resolvedCount}</strong>
         </div>
       </div>
     </div>
