@@ -113,7 +113,7 @@ function FraudAlerts() {
               <span>{alert.id}</span>
               <span>{alert.amount}</span>
               <span className="risk-high">{alert.risk}</span>
-              <span className="alert-status">{alert.status}</span>
+              <span className={`alert-status ${alert.status.toLowerCase()}`}>{alert.status}</span>
             </div>
           ))}
         </div>

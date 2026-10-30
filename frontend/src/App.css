@@ -1037,3 +1037,79 @@ body {
   color: #b91c1c;
   font-size: 13px;
 }
+
+/* =========================
+   INVESTIGATION TABLE SPACING
+========================= */
+
+.investigation-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+  text-align: center;
+}
+
+.investigation-table th {
+  padding: 16px 20px;
+  background: #f1f5f9;
+  color: #172033;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.investigation-table td {
+  padding: 17px 20px;
+  color: #334155;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.investigation-table tbody tr {
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+}
+
+.investigation-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.investigation-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* =========================
+   FRAUD ALERT STATUS COLORS
+========================= */
+
+.fraud-alerts-page .alert-status {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Pending */
+.fraud-alerts-page .alert-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Investigating */
+.fraud-alerts-page .alert-status.investigating {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* Reviewing */
+.fraud-alerts-page .alert-status.reviewing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Completed */
+.fraud-alerts-page .alert-status.completed {
+  background: #dcfce7;
+  color: #15803d;
+}
