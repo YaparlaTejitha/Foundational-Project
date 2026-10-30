@@ -13,6 +13,9 @@ import RiskMonitoring from "./pages/RiskMonitoring";
 import Investigation from "./pages/Investigation";
 import FraudCases from "./pages/FraudCases";
 import Analytics from "./pages/Analytics";
+import AIInsights from "./pages/AIInsights";
+import Settings from "./pages/Settings";
+
 
 function Dashboard() {
   return (
@@ -318,6 +321,15 @@ function App() {
               path="/analytics"
               element={<Analytics />}
             />
+            <Route
+              path="/ai-insights"
+              element={<AIInsights />}
+            />
+            <Route
+              path="/settings"
+              element={<Settings />}
+            />
+
           </Routes>
 
         </main>
