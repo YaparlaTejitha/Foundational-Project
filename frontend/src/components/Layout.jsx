@@ -12,6 +12,7 @@ function Layout() {
           <Link to="/transactions">Transactions</Link>
           <Link to="/alerts">Fraud Alerts</Link>
           <Link to="/analytics">Analytics</Link>
+          <Link to="/prediction-history">Prediction History</Link>
         </nav>
       </aside>
 

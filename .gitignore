@@ -19,3 +19,19 @@ backend/models/*.pkl
 *.backup
 *.before-recovery
 *.binary-backup
+
+# Additional Python environment
+backend/venv312/
+
+# Frontend build output
+frontend/dist/
+
+# Backup source files
+*_backup.*
+*backup*
+
+# Local databases
+backend/*.db
+
+# Include the active trained model
+!backend/models/fraud_detection_model.pkl
