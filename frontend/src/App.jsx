@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
+
 import {
   BrowserRouter,
   Routes,
   Route,
   NavLink,
-  Link
+  Link,
+  Navigate,
+  useNavigate,
 } from "react-router-dom";
 
 import "./App.css";
 
+import Login from "./pages/Login";
 import Transactions from "./pages/Transactions";
 import FraudAlerts from "./pages/FraudAlerts";
 import RiskMonitoring from "./pages/RiskMonitoring";
@@ -20,6 +24,10 @@ import PredictionHistory from "./pages/PredictionHistory";
 import Settings from "./pages/Settings";
 
 
+/* =========================
+   DASHBOARD
+========================= */
+
 function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +38,9 @@ function Dashboard() {
 
     async function loadTransactions() {
       try {
-        const response = await fetch("/api/transactions");
+        const response = await fetch("/api/transactions", {
+          credentials: "include",
+        });
 
         if (!response.ok) {
           throw new Error(`Request failed (${response.status})`);
@@ -44,7 +54,9 @@ function Dashboard() {
         }
       } catch {
         if (isCurrent) {
-          setError("Could not load dashboard data. Check that the backend is running.");
+          setError(
+            "Could not load dashboard data. Check that the backend is running."
+          );
         }
       } finally {
         if (isCurrent) {
@@ -94,7 +106,9 @@ function Dashboard() {
       <div className="page-header">
         <div>
           <h1>Fraud Detection Dashboard</h1>
-          <p>Monitor transactions and identify suspicious activity.</p>
+          <p>
+            Monitor transactions and identify suspicious activity.
+          </p>
         </div>
       </div>
 
@@ -166,20 +180,22 @@ function Dashboard() {
             </div>
           )}
 
-          {!loading && !error && recentTransactions.map((transaction) => (
-            <div className="transaction-item" key={transaction.id}>
-              <span>{transaction.id}</span>
-              <span>{transaction.amount}</span>
-              <span>{transaction.status}</span>
-              <span>
-                {Number(transaction.risk) >= 70
-                  ? "High"
-                  : Number(transaction.risk) >= 40
-                  ? "Medium"
-                  : "Low"}
-              </span>
-            </div>
-          ))}
+          {!loading &&
+            !error &&
+            recentTransactions.map((transaction) => (
+              <div className="transaction-item" key={transaction.id}>
+                <span>{transaction.id}</span>
+                <span>{transaction.amount}</span>
+                <span>{transaction.status}</span>
+                <span>
+                  {Number(transaction.risk) >= 70
+                    ? "High"
+                    : Number(transaction.risk) >= 40
+                    ? "Medium"
+                    : "Low"}
+                </span>
+              </div>
+            ))}
 
         </div>
 
@@ -257,140 +273,247 @@ function Dashboard() {
 }
 
 
-function App() {
+/* =========================
+   LOGOUT
+========================= */
+
+function Logout() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function logoutAdmin() {
+      try {
+        await fetch("/api/admin/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (error) {
+        console.error("Logout failed:", error);
+      } finally {
+        navigate("/login", { replace: true });
+      }
+    }
+
+    logoutAdmin();
+  }, [navigate]);
+
+  return <p>Logging out...</p>;
+}
+
+
+/* =========================
+   AUTHENTICATION CHECK
+========================= */
+
+function RequireAuth({ children }) {
+  const [authenticated, setAuthenticated] = useState(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function checkAuthentication() {
+      try {
+        const response = await fetch("/api/admin/me", {
+          credentials: "include",
+        });
+
+        if (isCurrent) {
+          setAuthenticated(response.ok);
+        }
+      } catch {
+        if (isCurrent) {
+          setAuthenticated(false);
+        }
+      }
+    }
+
+    checkAuthentication();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  if (authenticated === null) {
+    return <p>Checking authentication...</p>;
+  }
+
+  if (!authenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+
+/* =========================
+   MAIN DASHBOARD LAYOUT
+========================= */
+
+function DashboardLayout() {
   return (
-    <BrowserRouter>
+    <div className="app-layout">
 
-      <div className="app-layout">
+      <aside className="sidebar">
 
-        {/* Sidebar */}
+        <div className="logo-section">
 
-        <aside className="sidebar">
+          <div className="logo-box">
+            A
+          </div>
 
-          <div className="logo-section">
+          <div>
+            <h2>AegisAI</h2>
+            <p>Fraud Detection</p>
+          </div>
 
-            <div className="logo-box">
+        </div>
+
+        <nav>
+
+          <NavLink to="/" end>
+            Dashboard
+          </NavLink>
+
+          <NavLink to="/transactions">
+            Transactions
+          </NavLink>
+
+          <NavLink to="/alerts">
+            Fraud Alerts
+          </NavLink>
+
+          <NavLink to="/risk-monitoring">
+            Risk Monitoring
+          </NavLink>
+
+          <NavLink to="/investigation">
+            Investigation
+          </NavLink>
+
+          <NavLink to="/fraud-cases">
+            Fraud Cases
+          </NavLink>
+
+          <NavLink to="/analytics">
+            Analytics
+          </NavLink>
+
+          <NavLink to="/ai-insights">
+            AI Insights
+          </NavLink>
+
+          <NavLink to="/prediction-history">
+            Prediction History
+          </NavLink>
+
+        </nav>
+
+        <div className="sidebar-bottom">
+
+          <Link to="/settings">
+            Settings
+          </Link>
+
+          <Link to="/logout">
+            Logout
+          </Link>
+
+        </div>
+
+      </aside>
+
+      <main className="main-content">
+
+        <div className="top-bar">
+
+          <div className="admin-profile">
+
+            <div className="admin-icon">
               A
             </div>
 
             <div>
-              <h2>AegisAI</h2>
-              <p>Fraud Detection</p>
+              <strong>Admin</strong>
+              <span>Administrator</span>
             </div>
 
           </div>
 
-          {/* Navigation */}
+        </div>
 
-          <nav>
+        <Routes>
 
-            <NavLink to="/" end>
-              Dashboard
-            </NavLink>
+          <Route path="/" element={<Dashboard />} />
 
-            <NavLink to="/transactions">
-              Transactions
-            </NavLink>
+          <Route path="/transactions" element={<Transactions />} />
 
-            <NavLink to="/alerts">
-              Fraud Alerts
-            </NavLink>
+          <Route path="/alerts" element={<FraudAlerts />} />
 
-            <NavLink to="/risk-monitoring">
-              Risk Monitoring
-            </NavLink>
+          <Route
+            path="/risk-monitoring"
+            element={<RiskMonitoring />}
+          />
 
-            <NavLink to="/investigation">
-              Investigation
-            </NavLink>
+          <Route
+            path="/investigation"
+            element={<Investigation />}
+          />
 
-            <NavLink to="/fraud-cases">
-              Fraud Cases
-            </NavLink>
+          <Route
+            path="/fraud-cases"
+            element={<FraudCases />}
+          />
 
-            <NavLink to="/analytics">
-              Analytics
-            </NavLink>
+          <Route path="/analytics" element={<Analytics />} />
 
-            <NavLink to="/ai-insights">
-              AI Insights
-            </NavLink>
+          <Route path="/ai-insights" element={<AIInsights />} />
 
-            <NavLink to="/prediction-history">
-              Prediction History
-            </NavLink>
+          <Route
+            path="/prediction-history"
+            element={<PredictionHistory />}
+          />
 
-          </nav>
+          <Route path="/settings" element={<Settings />} />
 
-          {/* Bottom Navigation */}
+          <Route path="*" element={<Navigate to="/" replace />} />
 
-          <div className="sidebar-bottom">
+        </Routes>
 
-            <Link to="/settings">
-              Settings
-            </Link>
+      </main>
 
-            <Link to="/logout">
-              Logout
-            </Link>
+    </div>
+  );
+}
 
-          </div>
 
-        </aside>
+/* =========================
+   APP
+========================= */
 
-        {/* Main Content */}
+function App() {
+  return (
+    <BrowserRouter>
 
-        <main className="main-content">
+      <Routes>
 
-          <div className="top-bar">
+        {/* Login page */}
+        <Route path="/login" element={<Login />} />
 
-            <div className="admin-profile">
+        {/* Logout */}
+        <Route path="/logout" element={<Logout />} />
 
-              <div className="admin-icon">
-                A
-              </div>
+        {/* Protected dashboard */}
+        <Route
+          path="/*"
+          element={
+            <RequireAuth>
+              <DashboardLayout />
+            </RequireAuth>
+          }
+        />
 
-              <div>
-                <strong>Admin</strong>
-                <span>Administrator</span>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* Pages */}
-
-          <Routes>
-
-            <Route path="/" element={<Dashboard />} />
-
-            <Route path="/transactions" element={<Transactions />} />
-
-            <Route path="/alerts" element={<FraudAlerts />} />
-
-            <Route path="/risk-monitoring" element={<RiskMonitoring />} />
-
-            <Route path="/investigation" element={<Investigation />} />
-
-            <Route path="/fraud-cases" element={<FraudCases />} />
-
-            <Route path="/analytics" element={<Analytics />} />
-
-            <Route path="/ai-insights" element={<AIInsights />} />
-
-            <Route
-              path="/prediction-history"
-              element={<PredictionHistory />}
-            />
-
-            <Route path="/settings" element={<Settings />} />
-
-          </Routes>
-
-        </main>
-
-      </div>
+      </Routes>
 
     </BrowserRouter>
   );
