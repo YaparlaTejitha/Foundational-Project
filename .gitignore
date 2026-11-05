@@ -2,3 +2,20 @@ node_modules/
 frontend/node_modules/
 backend/__pycache__/
 .env
+
+# Python environment and cache
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Large dataset
+backend/dataset/
+
+# Trained model files
+backend/models/*.pkl
+
+# Backup files
+*.backup
+*.before-recovery
+*.binary-backup
