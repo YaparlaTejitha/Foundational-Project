@@ -6,9 +6,25 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
+from flask_session import Session
+from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
+
+app.config.update(
+    SECRET_KEY=os.environ.get("AEGISAI_SECRET_KEY", "dev-secret-change-before-deployment"),
+    SESSION_TYPE="filesystem",
+    SESSION_PERMANENT=False,
+    SESSION_USE_SIGNER=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
+
+Session(app)
+
+DATABASE_PATH = Path(__file__).with_name("aegisai.db")
 DATABASE_PATH = Path(__file__).with_name("aegisai.db")
 
 SAMPLE_TRANSACTIONS = [
@@ -103,6 +119,88 @@ def initialize_database():
 
     finally:
         connection.close()
+
+@app.post("/api/admin/login")
+
+def admin_login():
+    payload = request.get_json(silent=True) or {}
+
+    email = os.environ.get("AEGISAI_ADMIN_EMAIL", "admin@aegisai.com")
+    password_hash = os.environ.get("AEGISAI_ADMIN_PASSWORD_HASH")
+
+    entered_email = payload.get("email", "")
+    entered_password = payload.get("password", "")
+
+    print("LOGIN DEBUG:")
+    print("LOGIN DEBUG:")
+    print("Email matches:", entered_email.strip().lower() == email.lower())
+    print("Hash configured:", bool(password_hash))
+    print("Password matches:", bool(password_hash) and check_password_hash(password_hash, entered_password))
+
+    if not password_hash:
+        return jsonify({"error": "Admin credentials are not configured."}), 500
+
+    if (
+        not isinstance(entered_email, str)
+        or not isinstance(entered_password, str)
+        or entered_email.strip().lower() != email.lower()
+        or not check_password_hash(password_hash, entered_password)
+    ):
+        return jsonify({"error": "Invalid email or password."}), 401
+
+    session.clear()
+    session["admin_logged_in"] = True
+    session["admin_email"] = email
+
+    return jsonify({"message": "Login successful", "email": email}), 200
+
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Invalid login details."}), 400
+
+    email = os.environ.get("AEGISAI_ADMIN_EMAIL", "admin@aegisai.com")
+    password_hash = os.environ.get("AEGISAI_ADMIN_PASSWORD_HASH")
+    print("LOGIN EMAIL:", repr(email))
+    print("HASH EXISTS:", bool(password_hash))
+    print("ENTERED EMAIL:", repr(payload.get("email")))
+    print("PASSWORD MATCH:", check_password_hash(password_hash, payload.get("password", "")) if password_hash else False)
+
+    if not password_hash:
+        return jsonify({"error": "Admin credentials are not configured."}), 500
+
+    entered_email = payload.get("email", "")
+    entered_password = payload.get("password", "")
+
+    if not isinstance(entered_email, str) or not isinstance(entered_password, str):
+        return jsonify({"error": "Invalid login details."}), 400
+
+    if (
+        entered_email.strip().lower() != email.lower()
+        or not check_password_hash(password_hash, entered_password)
+    ):
+        return jsonify({"error": "Invalid email or password."}), 401
+
+    session.clear()
+    session["admin_logged_in"] = True
+    session["admin_email"] = email
+
+    return jsonify({"message": "Login successful", "email": email}), 200
+
+
+@app.get("/api/admin/me")
+def admin_me():
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Not logged in"}), 401
+
+    return jsonify({
+        "logged_in": True,
+        "email": session.get("admin_email")
+    }), 200
+
+
+@app.post("/api/admin/logout")
+def admin_logout():
+    session.clear()
+    return jsonify({"message": "Logout successful"}), 200
 
 
 @app.get("/api/health")
